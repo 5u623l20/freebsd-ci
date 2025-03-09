@@ -74,7 +74,7 @@
     name: FreeBSD-ci
     scm:
       - git:
-          url: https://github.com/freebsd/freebsd-ci.git
+          url: https://github.com/5u623l20/freebsd-ci.git
           branches:
-            - 'origin/main'
+            - 'origin/bofh'
           basedir: freebsd-ci
