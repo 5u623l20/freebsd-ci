@@ -9,6 +9,9 @@ fi
 MAKECONF=${MAKECONF:-/dev/null}
 SRCCONF=${SRCCONF:-/dev/null}
 FBSD_BRANCH=${FBSD_BRANCH:-main}
+JFLAG=${JFLAG:-12}
+TARGET=${TARGET:-amd64}
+TARGET_ARCH=${TARGET_ARCH:-amd64}
 ARTIFACT=${WORKSPACE}/diff.html
 ARTIFACT_DEST=artifact/reproducibility/${FBSD_BRANCH}/${TARGET}/${TARGET_ARCH}/${GIT_COMMIT}-${TESTTYPE}.html
 export TESTTYPE=${TESTTYPE:-timestamp}
