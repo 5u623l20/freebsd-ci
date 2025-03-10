@@ -22,6 +22,7 @@ if [ ${TESTTYPE} = "timestamp" ]; then
 	echo $SOURCE_DATE_EPOCH
 	export MAKEOBJDIRPREFIX=${WORKSPACE}/obj1
 	rm -fr ${MAKEOBJDIRPREFIX}
+	cd /usr/src
 	sudo make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
 		buildworld \
 		TARGET=${TARGET} \
