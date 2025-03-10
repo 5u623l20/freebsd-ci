@@ -13,7 +13,12 @@ ARTIFACT=${WORKSPACE}/diff.html
 ARTIFACT_DEST=artifact/reproducibility/${FBSD_BRANCH}/${TARGET}/${TARGET_ARCH}/${GIT_COMMIT}-${TESTTYPE}.html
 export TESTTYPE=${TESTTYPE:-timestamp}
 
-build() {
+if [ ${TESTTYPE} = "timestamp" ]; then
+	# Set SOURCE_DATE_EPOCH to today at 00:00:00 UTC
+	export SOURCE_DATE_EPOCH=$(date -u -j -f "%Y-%m-%d %H:%M:%S" "$(date -u +%Y-%m-%d) 00:00:00" +%s)
+	echo $SOURCE_DATE_EPOCH
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/obj1
+	rm -fr ${MAKEOBJDIRPREFIX}
 	sudo make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
 		buildworld \
 		TARGET=${TARGET} \
@@ -28,21 +33,25 @@ build() {
 		${CROSS_TOOLCHAIN_PARAM} \
 		__MAKE_CONF=${MAKECONF} \
 		SRCCONF=${SRCCONF}
-}
-
-if [ ${TESTTYPE} = "timestamp" ]; then
-	# Set SOURCE_DATE_EPOCH to today at 00:00:00 UTC
-	export SOURCE_DATE_EPOCH=$(date -u -j -f "%Y-%m-%d %H:%M:%S" "$(date -u +%Y-%m-%d) 00:00:00" +%s)
-	echo $SOURCE_DATE_EPOCH
-	export MAKEOBJDIRPREFIX=${WORKSPACE}/obj1
-	rm -fr ${MAKEOBJDIRPREFIX}
-	build
 	# One year from today's date at 00:00:00 UTC
 	export SOURCE_DATE_EPOCH=$(date -u -j -v+1y -f "%Y-%m-%d %H:%M:%S" "$(date -u +%Y-%m-%d) 00:00:00" +%s)
 	echo $SOURCE_DATE_EPOCH
 	export MAKEOBJDIRPREFIX=${WORKSPACE}/obj2
 	rm -fr ${MAKEOBJDIRPREFIX}
-	build
+	sudo make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
 	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/obj1 ${WORKSPACE}/obj2
 fi
 # #	Variable	Purpose	How to Test It in CI
