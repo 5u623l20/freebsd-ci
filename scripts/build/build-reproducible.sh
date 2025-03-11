@@ -23,14 +23,14 @@ if [ ${TESTTYPE} = "timestamp" ]; then
 	export MAKEOBJDIRPREFIX=${WORKSPACE}/obj1
 	rm -fr ${MAKEOBJDIRPREFIX}
 	cd /usr/src
-	sudo make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
 		buildworld \
 		TARGET=${TARGET} \
 		TARGET_ARCH=${TARGET_ARCH} \
 		${CROSS_TOOLCHAIN_PARAM} \
 		__MAKE_CONF=${MAKECONF} \
 		SRCCONF=${SRCCONF}
-	sudo make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
 		buildkernel \
 		TARGET=${TARGET} \
 		TARGET_ARCH=${TARGET_ARCH} \
@@ -42,14 +42,14 @@ if [ ${TESTTYPE} = "timestamp" ]; then
 	echo $SOURCE_DATE_EPOCH
 	export MAKEOBJDIRPREFIX=${WORKSPACE}/obj2
 	rm -fr ${MAKEOBJDIRPREFIX}
-	sudo make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
 		buildworld \
 		TARGET=${TARGET} \
 		TARGET_ARCH=${TARGET_ARCH} \
 		${CROSS_TOOLCHAIN_PARAM} \
 		__MAKE_CONF=${MAKECONF} \
 		SRCCONF=${SRCCONF}
-	sudo make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
 		buildkernel \
 		TARGET=${TARGET} \
 		TARGET_ARCH=${TARGET_ARCH} \
