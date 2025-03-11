@@ -8,6 +8,7 @@ fi
 
 MAKECONF=${MAKECONF:-/dev/null}
 MAKECONF_AMD=${MAKECONF_AMD:-/dev/null}
+MAKECONF_ICF=${MAKECONF_ICF:-/dev/null}
 MAKECONF_INTEL=${MAKECONF_INTEL:-/dev/null}
 MAKECONF_STATIC=${MAKECONF_STATIC:-/dev/null}
 SRCCONF=${SRCCONF:-/dev/null}
@@ -354,14 +355,45 @@ elif [ ${TESTTYPE} = "linkerstatic" ]; then
 		${CROSS_TOOLCHAIN_PARAM} \
 		__MAKE_CONF=${MAKECONF_STATIC} \
 		SRCCONF=${SRCCONF}
-	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objroot ${WORKSPACE}/objnobody
+	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/obj ${WORKSPACE}/objstatic
+elif [ ${TESTTYPE} = "linkericf" ]; then
+	echo $SOURCE_DATE_EPOCH
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/obj
+	rm -fr ${MAKEOBJDIRPREFIX}
+	cd /usr/src
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objicf
+	rm -fr ${MAKEOBJDIRPREFIX}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN -DNO_ROOT WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF_STATIC} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF_STATIC} \
+		SRCCONF=${SRCCONF}
+	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/obj ${WORKSPACE}/objicf
 fi
-# 8	Filesystem (UFS vs. ZFS)	Ensures FS-specific metadata doesn’t affect
-# reproducibility.	Build on both UFS and ZFS and compare.
-# 10	Linking (static vs. dynamic)	Ensures symbol tables are consistently
-# ordered.	Build with different linkers and compare ELF headers.
-#
-#
+
 sudo mkdir -p ${ARTIFACT_DEST}
 sudo mv ${ARTIFACT} ${ARTIFACT_DEST}
 
