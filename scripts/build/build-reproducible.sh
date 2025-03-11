@@ -237,10 +237,44 @@ elif [ ${TESTTYPE} = "kernconf" ]; then
 		KERNCONF=GENERIC-NODEBUG \
 		SRCCONF=${SRCCONF}
 	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/obj/usr/src/amd64.amd64/sys/GENERIC ${WORKSPACE}/obj/usr/src/amd64.amd64/sys/GENERIC-NODEBUG
+elif [ ${TESTTYPE} = "uid" ]; then
+	echo $SOURCE_DATE_EPOCH
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objroot
+	rm -fr ${MAKEOBJDIRPREFIX}
+	cd /usr/src
+	export LC_ALL=C
+	sudo -E make -j ${JFLAG} -DNO_CLEAN -DNO_ROOT WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objnobody
+	rm -fr ${MAKEOBJDIRPREFIX}
+	sudo -u nobody -E make -j ${JFLAG} -DNO_CLEAN -DNO_ROOT WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objroot ${WORKSPACE}/objnobody
 fi
-# #	Variable	Purpose	How to Test It in CI
-# 5	Kernel Config (KERNCONF)	Ensures kernel builds don’t embed unintended
-# metadata.	Build with GENERIC vs. a modified kernel config.
 # 6	Compiler Version (clang)	Detects non-deterministic behavior across
 # compiler versions.	Build with Clang 13 vs. Clang 16.
 # 8	Filesystem (UFS vs. ZFS)	Ensures FS-specific metadata doesn’t affect
