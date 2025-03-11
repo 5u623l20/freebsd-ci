@@ -209,6 +209,34 @@ elif [ ${TESTTYPE} = "locale" ]; then
 		__MAKE_CONF=${MAKECONF} \
 		SRCCONF=${SRCCONF}
 	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objlocalec ${WORKSPACE}/objlocalefr
+elif [ ${TESTTYPE} = "kernconf" ]; then
+	echo $SOURCE_DATE_EPOCH
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/obj
+	rm -fr ${MAKEOBJDIRPREFIX}
+	cd /usr/src
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		KERNCONF=GENERIC-NODEBUG \
+		SRCCONF=${SRCCONF}
+	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/obj/usr/src/amd64.amd64/sys/GENERIC ${WORKSPACE}/obj/usr/src/amd64.amd64/sys/GENERIC-NODEBUG
 fi
 # #	Variable	Purpose	How to Test It in CI
 # 5	Kernel Config (KERNCONF)	Ensures kernel builds don’t embed unintended

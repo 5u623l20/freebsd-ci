@@ -7,5 +7,5 @@ env \
 	SRCCONF=${WORKSPACE}/`dirname $0`/src.conf \
 	MAKECONF_AMD=${WORKSPACE}/`dirname $0`/make-amd.conf \
 	MAKECONF_INTEL=${WORKSPACE}/`dirname $0`/make-intel.conf \
-	TESTTYPE=arch
+	TESTTYPE=arch \
 	sh -x ${WORKSPACE}/freebsd-ci/scripts/build/build-reproducible.sh
