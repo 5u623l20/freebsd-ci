@@ -9,6 +9,7 @@ fi
 MAKECONF=${MAKECONF:-/dev/null}
 MAKECONF_AMD=${MAKECONF_AMD:-/dev/null}
 MAKECONF_INTEL=${MAKECONF_INTEL:-/dev/null}
+MAKECONF_STATIC=${MAKECONF_STATIC:-/dev/null}
 SRCCONF=${SRCCONF:-/dev/null}
 FBSD_BRANCH=${FBSD_BRANCH:-main}
 JFLAG=${JFLAG:-12}
@@ -316,6 +317,42 @@ elif [ ${TESTTYPE} = "clang" ]; then
 		TARGET_ARCH=${TARGET_ARCH} \
 		${CROSS_TOOLCHAIN_PARAM} \
 		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objroot ${WORKSPACE}/objnobody
+elif [ ${TESTTYPE} = "linkerstatic" ]; then
+	echo $SOURCE_DATE_EPOCH
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/obj
+	rm -fr ${MAKEOBJDIRPREFIX}
+	cd /usr/src
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objstatic
+	rm -fr ${MAKEOBJDIRPREFIX}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN -DNO_ROOT WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF_STATIC} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF_STATIC} \
 		SRCCONF=${SRCCONF}
 	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objroot ${WORKSPACE}/objnobody
 fi
