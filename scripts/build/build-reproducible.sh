@@ -171,16 +171,50 @@ elif [ ${TESTTYPE} = "parallel" ]; then
 		__MAKE_CONF=${MAKECONF} \
 		SRCCONF=${SRCCONF}
 	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objj1 ${WORKSPACE}/objjx
+elif [ ${TESTTYPE} = "locale" ]; then
+	echo $SOURCE_DATE_EPOCH
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objlocalec
+	rm -fr ${MAKEOBJDIRPREFIX}
+	cd /usr/src
+	export LC_ALL=C
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objlocalefr
+	rm -fr ${MAKEOBJDIRPREFIX}
+	export LC_ALL=fr_FR.UTF-8
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objlocalec ${WORKSPACE}/objlocalefr
 fi
 # #	Variable	Purpose	How to Test It in CI
-# 4	Parallelism (make -j)	Detects race conditions in parallel builds.	Build
-# with -j1 vs. -j8 and compare results.
 # 5	Kernel Config (KERNCONF)	Ensures kernel builds don’t embed unintended
 # metadata.	Build with GENERIC vs. a modified kernel config.
 # 6	Compiler Version (clang)	Detects non-deterministic behavior across
 # compiler versions.	Build with Clang 13 vs. Clang 16.
-# 7	Locale (LC_ALL)	Catches string sorting inconsistencies.	Build with LC_ALL=C
-# vs. LC_ALL=fr_FR.UTF-8.
 # 8	Filesystem (UFS vs. ZFS)	Ensures FS-specific metadata doesn’t affect
 # reproducibility.	Build on both UFS and ZFS and compare.
 # 9	User (UID/GID)	Ensures builds don’t embed UID/GID metadata.	Build as
