@@ -250,7 +250,7 @@ elif [ ${TESTTYPE} = "uid" ]; then
 		${CROSS_TOOLCHAIN_PARAM} \
 		__MAKE_CONF=${MAKECONF} \
 		SRCCONF=${SRCCONF}
-	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+	sudo -E make -j ${JFLAG} -DNO_CLEAN -DNO_ROOT WITH_REPRODUCIBLE_BUILD=yes \
 		buildkernel \
 		TARGET=${TARGET} \
 		TARGET_ARCH=${TARGET_ARCH} \
@@ -266,6 +266,50 @@ elif [ ${TESTTYPE} = "uid" ]; then
 		${CROSS_TOOLCHAIN_PARAM} \
 		__MAKE_CONF=${MAKECONF} \
 		SRCCONF=${SRCCONF}
+	sudo -u nobody -E make -j ${JFLAG} -DNO_CLEAN -DNO_ROOOT WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objroot ${WORKSPACE}/objnobody
+elif [ ${TESTTYPE} = "clang" ]; then
+	echo $SOURCE_DATE_EPOCH
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objclan14
+	rm -fr ${MAKEOBJDIRPREFIX}
+	cd /usr/src
+	sudo pkg install -y llvm14
+	export CC=/usr/local/llvm14/bin/clang
+	export CXX=/usr/local/llvm14/bin/clang++
+	export CPP=/usr/local/llvm14/bin/clang-cpp
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objclang18
+	rm -fr ${MAKEOBJDIRPREFIX}
+	sudo pkg install -y llvm18
+	export CC=/usr/local/llvm18/bin/clang
+	export CXX=/usr/local/llvm18/bin/clang++
+	export CPP=/usr/local/llvm18/bin/clang-cpp
+	sudo -E make -j ${JFLAG} -DNO_CLEAN -DNO_ROOT WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
 	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
 		buildkernel \
 		TARGET=${TARGET} \
@@ -275,12 +319,8 @@ elif [ ${TESTTYPE} = "uid" ]; then
 		SRCCONF=${SRCCONF}
 	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objroot ${WORKSPACE}/objnobody
 fi
-# 6	Compiler Version (clang)	Detects non-deterministic behavior across
-# compiler versions.	Build with Clang 13 vs. Clang 16.
 # 8	Filesystem (UFS vs. ZFS)	Ensures FS-specific metadata doesn’t affect
 # reproducibility.	Build on both UFS and ZFS and compare.
-# 9	User (UID/GID)	Ensures builds don’t embed UID/GID metadata.	Build as
-# root and as a non-root user.
 # 10	Linking (static vs. dynamic)	Ensures symbol tables are consistently
 # ordered.	Build with different linkers and compare ELF headers.
 #
