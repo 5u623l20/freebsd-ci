@@ -78,7 +78,6 @@ elif [ ${TESTTYPE} = "arch" ]; then
 		${CROSS_TOOLCHAIN_PARAM} \
 		__MAKE_CONF=${MAKECONF_AMD} \
 		SRCCONF=${SRCCONF}
-	# One year from today's date at 00:00:00 UTC
 	export MAKEOBJDIRPREFIX=${WORKSPACE}/objintel
 	rm -fr ${MAKEOBJDIRPREFIX}
 	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
@@ -96,12 +95,47 @@ elif [ ${TESTTYPE} = "arch" ]; then
 		__MAKE_CONF=${MAKECONF_INTEL} \
 		SRCCONF=${SRCCONF}
 	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objamd ${WORKSPACE}/objintel
+elif [ ${TESTTYPE} = "path" ]; then
+	cp -Rp /usr/src ${WORKSPACE}/src1
+	cp -Rp /usr/src ${WORKSPACE}/src2
+	echo $SOURCE_DATE_EPOCH
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objpath1
+	rm -fr ${MAKEOBJDIRPREFIX}
+	cd ${WORKSPACE}/src1
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objpath2
+	rm -fr ${MAKEOBJDIRPREFIX}
+	cd ${WORKSPACE}/src2
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF} \
+		SRCCONF=${SRCCONF}
+	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objpath1 ${WORKSPACE}/objpath2
 fi
 # #	Variable	Purpose	How to Test It in CI
-# 2	CPU Type (-march flags)	Detects CPU-specific optimizations.	Build on AMD
-# vs. Intel vs. ARM64.
-# 3	Build Path (PWD)	Catches absolute path issues in binaries.	Build in
-# /build1/ and /build2/ and compare.
 # 4	Parallelism (make -j)	Detects race conditions in parallel builds.	Build
 # with -j1 vs. -j8 and compare results.
 # 5	Kernel Config (KERNCONF)	Ensures kernel builds don’t embed unintended
