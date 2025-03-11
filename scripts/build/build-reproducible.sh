@@ -7,6 +7,8 @@ if [ -n "${CROSS_TOOLCHAIN}" ]; then
 fi
 
 MAKECONF=${MAKECONF:-/dev/null}
+MAKECONF_AMD=${MAKECONF_AMD:-/dev/null}
+MAKECONF_INTEL=${MAKECONF_INTEL:-/dev/null}
 SRCCONF=${SRCCONF:-/dev/null}
 FBSD_BRANCH=${FBSD_BRANCH:-main}
 JFLAG=${JFLAG:-12}
@@ -15,10 +17,10 @@ TARGET_ARCH=${TARGET_ARCH:-amd64}
 ARTIFACT=${WORKSPACE}/diff.html
 ARTIFACT_DEST=artifact/reproducibility/${FBSD_BRANCH}/${TARGET}/${TARGET_ARCH}/${GIT_COMMIT}-${TESTTYPE}.html
 export TESTTYPE=${TESTTYPE:-timestamp}
+# Set SOURCE_DATE_EPOCH to today at 00:00:00 UTC
+export SOURCE_DATE_EPOCH=$(date -u -j -f "%Y-%m-%d %H:%M:%S" "$(date -u +%Y-%m-%d) 00:00:00" +%s)
 
 if [ ${TESTTYPE} = "timestamp" ]; then
-	# Set SOURCE_DATE_EPOCH to today at 00:00:00 UTC
-	export SOURCE_DATE_EPOCH=$(date -u -j -f "%Y-%m-%d %H:%M:%S" "$(date -u +%Y-%m-%d) 00:00:00" +%s)
 	echo $SOURCE_DATE_EPOCH
 	export MAKEOBJDIRPREFIX=${WORKSPACE}/obj1
 	rm -fr ${MAKEOBJDIRPREFIX}
@@ -57,6 +59,43 @@ if [ ${TESTTYPE} = "timestamp" ]; then
 		__MAKE_CONF=${MAKECONF} \
 		SRCCONF=${SRCCONF}
 	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/obj1 ${WORKSPACE}/obj2
+elif [ ${TESTTYPE} = "arch" ]; then
+	echo $SOURCE_DATE_EPOCH
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objamd
+	rm -fr ${MAKEOBJDIRPREFIX}
+	cd /usr/src
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF_AMD} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF_AMD} \
+		SRCCONF=${SRCCONF}
+	# One year from today's date at 00:00:00 UTC
+	export MAKEOBJDIRPREFIX=${WORKSPACE}/objintel
+	rm -fr ${MAKEOBJDIRPREFIX}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildworld \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF_INTEL} \
+		SRCCONF=${SRCCONF}
+	sudo -E make -j ${JFLAG} -DNO_CLEAN WITH_REPRODUCIBLE_BUILD=yes \
+		buildkernel \
+		TARGET=${TARGET} \
+		TARGET_ARCH=${TARGET_ARCH} \
+		${CROSS_TOOLCHAIN_PARAM} \
+		__MAKE_CONF=${MAKECONF_INTEL} \
+		SRCCONF=${SRCCONF}
+	diffoscope --html ${WORKSPACE}/diff.html ${WORKSPACE}/objamd ${WORKSPACE}/objintel
 fi
 # #	Variable	Purpose	How to Test It in CI
 # 2	CPU Type (-march flags)	Detects CPU-specific optimizations.	Build on AMD
